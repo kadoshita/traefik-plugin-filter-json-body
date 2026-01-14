@@ -137,3 +137,112 @@ func TestFilterJsonBody(t *testing.T) {
 		})
 	}
 }
+
+func TestNew(t *testing.T) {
+	ctx := context.Background()
+	nextHandler := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
+
+	test_cases := []struct {
+		title       string
+		config      *filterjsonbody.Config
+		expectError bool
+	}{
+		{
+			title: "valid config",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "key",
+						BodyValueCondition: "^value$",
+					},
+				},
+			},
+			expectError: false,
+		}, {
+			title: "no rules",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{},
+			},
+			expectError: true,
+		}, {
+			title: "invalid regex",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "key",
+						BodyValueCondition: "[invalid",
+					},
+				},
+			},
+			expectError: true,
+		}, {
+			title: "empty path ignore",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "",
+						Method:             "POST",
+						BodyPath:           "key",
+						BodyValueCondition: "^value$",
+					},
+				},
+			},
+			expectError: false,
+		}, {
+			title: "empty method ignore",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "",
+						BodyPath:           "key",
+						BodyValueCondition: "^value$",
+					},
+				},
+			},
+			expectError: false,
+		}, {
+			title: "empty body path ignore",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "",
+						BodyValueCondition: "^value$",
+					},
+				},
+			},
+			expectError: false,
+		}, {
+			title: "empty body value condition ignore",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "key",
+						BodyValueCondition: "",
+					},
+				},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, test_case := range test_cases {
+		t.Run(test_case.title, func(t *testing.T) {
+			_, err := filterjsonbody.New(ctx, nextHandler, test_case.config, "test-plugin")
+			if test_case.expectError && err == nil {
+				t.Errorf("Expected error but got none")
+			}
+			if !test_case.expectError && err != nil {
+				t.Errorf("Did not expect error but got: %v", err)
+			}
+		})
+	}
+}
