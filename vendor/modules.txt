@@ -1,0 +1,9 @@
+# github.com/antchfx/jsonquery v1.3.6
+## explicit; go 1.14
+github.com/antchfx/jsonquery
+# github.com/antchfx/xpath v1.3.2
+## explicit; go 1.14
+github.com/antchfx/xpath
+# github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
+## explicit
+github.com/golang/groupcache/lru
