@@ -1,0 +1,13 @@
+displayName: Filter JSON Body
+type: middleware
+
+import: github.com/kadoshita/traefik-plugin-filter-json-body
+
+summary: 'Filter requests by JSON body content'
+
+testData:
+  rules:
+    - path: "/api/test"
+      method: "POST"
+      bodyPath: "key"
+      bodyValueCondition: "^value$"
