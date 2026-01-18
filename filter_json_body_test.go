@@ -2,8 +2,10 @@ package filterjsonbody_test
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -242,6 +244,153 @@ func TestNew(t *testing.T) {
 			}
 			if !test_case.expectError && err != nil {
 				t.Errorf("Did not expect error but got: %v", err)
+			}
+		})
+	}
+}
+
+func TestJsonPath(t *testing.T) {
+	ctx := context.Background()
+	nextHandler := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {})
+	test_data_file, err := os.Open("testdata.json")
+	if err != nil {
+		t.Fatalf("Failed to open test data file: %v", err)
+	}
+	defer test_data_file.Close()
+	test_data_bytes, err := io.ReadAll(test_data_file)
+	if err != nil {
+		t.Fatalf("Failed to read test data file: %v", err)
+	}
+	test_data_string := string(test_data_bytes)
+	test_cases := []struct {
+		title  string
+		config *filterjsonbody.Config
+	}{
+		{
+			title: "matcing string value",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "string",
+						BodyValueCondition: "^string$",
+					},
+				},
+			},
+		}, {
+			title: "matcing numeric value",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "number",
+						BodyValueCondition: "^42$",
+					},
+				},
+			},
+		}, {
+			title: "matcing boolean value",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "boolean",
+						BodyValueCondition: "^true$",
+					},
+				},
+			},
+		}, {
+			title: "matcing an string value in array",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "//arrayOfString/*[2]",
+						BodyValueCondition: "^two$",
+					},
+				},
+			},
+		}, {
+			title: "matcing an numeric value in array",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "//arrayOfNumber/*[3]",
+						BodyValueCondition: "^3$",
+					},
+				},
+			},
+		}, {
+			title: "matcing an boolean value in array",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "//arrayOfBoolean/*[1]",
+						BodyValueCondition: "^true$",
+					},
+				},
+			},
+		}, {
+			title: "matcing a nested value",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "//nestedObject/innerString",
+						BodyValueCondition: "^inner$",
+					},
+				},
+			},
+		}, {
+			title: "matcing a string value in nested array of object",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "//arrayOfObjects/*[1]/objString",
+						BodyValueCondition: "^obj1$",
+					},
+				},
+			},
+		}, {
+			title: "matcing a string value in nested array of any object",
+			config: &filterjsonbody.Config{
+				Rules: []filterjsonbody.Rule{
+					{
+						Path:               "/api/test",
+						Method:             "POST",
+						BodyPath:           "//arrayOfObjects/*/objString[text()='obj2']",
+						BodyValueCondition: "^obj2$",
+					},
+				},
+			},
+		},
+	}
+
+	for _, test_case := range test_cases {
+		t.Run(test_case.title, func(t *testing.T) {
+			pluginHandler, err := filterjsonbody.New(ctx, nextHandler, test_case.config, "test-plugin")
+			if err != nil {
+				t.Fatalf("Error creating plugin handler: %v", err)
+			}
+			req := httptest.NewRequestWithContext(ctx, "POST", "http://example.com/api/test", strings.NewReader(test_data_string))
+			req.Header.Set("Content-Type", "application/json")
+			rr := httptest.NewRecorder()
+
+			pluginHandler.ServeHTTP(rr, req)
+
+			if rr.Code != http.StatusForbidden {
+				t.Errorf("Handler returned wrong status code: got %v want %v", rr.Code, http.StatusForbidden)
 			}
 		})
 	}

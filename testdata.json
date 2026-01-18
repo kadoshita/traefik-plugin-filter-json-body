@@ -1,0 +1,21 @@
+{
+  "string": "string",
+  "number": 42,
+  "boolean": true,
+  "arrayOfString": ["one", "two", "three"],
+  "arrayOfNumber": [1, 2, 3],
+  "arrayOfBoolean": [true, false, true],
+  "nestedObject": {
+    "innerString": "inner"
+  },
+  "arrayOfObjects": [
+    {
+      "objString": "obj1",
+      "objNumber": 1
+    },
+    {
+      "objString": "obj2",
+      "objNumber": 2
+    }
+  ]
+}
