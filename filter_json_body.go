@@ -143,8 +143,8 @@ func (a *FilterJsonBody) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	for _, matchedRule := range matchedRules {
 		target := jsonquery.FindOne(doc, matchedRule.BodyPath)
 		if target != nil {
-			value, ok := target.Value().(string)
-			if ok && matchedRule.BodyValueCondition.MatchString(value) {
+			value := fmt.Sprintf("%v", target.Value())
+			if matchedRule.BodyValueCondition.MatchString(value) {
 				rw.WriteHeader(http.StatusForbidden)
 				rw.Write([]byte("Forbidden"))
 				return
