@@ -1,4 +1,4 @@
-package filterjsonbody
+package traefik_plugin_filter_json_body
 
 import (
 	"bytes"

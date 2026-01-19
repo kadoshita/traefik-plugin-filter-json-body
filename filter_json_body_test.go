@@ -1,4 +1,4 @@
-package filterjsonbody_test
+package traefik_plugin_filter_json_body
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	filterjsonbody "github.com/kadoshita/traefik-plugin-filter-json-body"
+
 )
 
 func TestFilterJsonBody(t *testing.T) {
@@ -19,8 +19,8 @@ func TestFilterJsonBody(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	config := &filterjsonbody.Config{
-		Rules: []filterjsonbody.Rule{
+	config := &Config{
+		Rules: []Rule{
 			{
 				Path:               "/api/test",
 				Method:             "POST",
@@ -29,7 +29,7 @@ func TestFilterJsonBody(t *testing.T) {
 			},
 		},
 	}
-	pluginHandler, err := filterjsonbody.New(ctx, nextHandler, config, "test-plugin")
+	pluginHandler, err := New(ctx, nextHandler, config, "test-plugin")
 	if err != nil {
 		t.Fatalf("Error creating plugin handler: %v", err)
 	}
@@ -146,13 +146,13 @@ func TestNew(t *testing.T) {
 
 	test_cases := []struct {
 		title       string
-		config      *filterjsonbody.Config
+		config      *Config
 		expectError bool
 	}{
 		{
 			title: "valid config",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -164,14 +164,14 @@ func TestNew(t *testing.T) {
 			expectError: false,
 		}, {
 			title: "no rules",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{},
+			config: &Config{
+				Rules: []Rule{},
 			},
 			expectError: true,
 		}, {
 			title: "invalid regex",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -183,8 +183,8 @@ func TestNew(t *testing.T) {
 			expectError: true,
 		}, {
 			title: "empty path ignore",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "",
 						Method:             "POST",
@@ -196,8 +196,8 @@ func TestNew(t *testing.T) {
 			expectError: false,
 		}, {
 			title: "empty method ignore",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "",
@@ -209,8 +209,8 @@ func TestNew(t *testing.T) {
 			expectError: false,
 		}, {
 			title: "empty body path ignore",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -222,8 +222,8 @@ func TestNew(t *testing.T) {
 			expectError: false,
 		}, {
 			title: "empty body value condition ignore",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -238,7 +238,7 @@ func TestNew(t *testing.T) {
 
 	for _, test_case := range test_cases {
 		t.Run(test_case.title, func(t *testing.T) {
-			_, err := filterjsonbody.New(ctx, nextHandler, test_case.config, "test-plugin")
+			_, err := New(ctx, nextHandler, test_case.config, "test-plugin")
 			if test_case.expectError && err == nil {
 				t.Errorf("Expected error but got none")
 			}
@@ -264,12 +264,12 @@ func TestJsonPath(t *testing.T) {
 	test_data_string := string(test_data_bytes)
 	test_cases := []struct {
 		title  string
-		config *filterjsonbody.Config
+		config *Config
 	}{
 		{
 			title: "matcing string value",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -280,8 +280,8 @@ func TestJsonPath(t *testing.T) {
 			},
 		}, {
 			title: "matcing numeric value",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -292,8 +292,8 @@ func TestJsonPath(t *testing.T) {
 			},
 		}, {
 			title: "matcing boolean value",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -304,8 +304,8 @@ func TestJsonPath(t *testing.T) {
 			},
 		}, {
 			title: "matcing an string value in array",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -316,8 +316,8 @@ func TestJsonPath(t *testing.T) {
 			},
 		}, {
 			title: "matcing an numeric value in array",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -328,8 +328,8 @@ func TestJsonPath(t *testing.T) {
 			},
 		}, {
 			title: "matcing an boolean value in array",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -340,8 +340,8 @@ func TestJsonPath(t *testing.T) {
 			},
 		}, {
 			title: "matcing a nested value",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -352,8 +352,8 @@ func TestJsonPath(t *testing.T) {
 			},
 		}, {
 			title: "matcing a string value in nested array of object",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -364,8 +364,8 @@ func TestJsonPath(t *testing.T) {
 			},
 		}, {
 			title: "matcing a string value in nested array of any object",
-			config: &filterjsonbody.Config{
-				Rules: []filterjsonbody.Rule{
+			config: &Config{
+				Rules: []Rule{
 					{
 						Path:               "/api/test",
 						Method:             "POST",
@@ -379,7 +379,7 @@ func TestJsonPath(t *testing.T) {
 
 	for _, test_case := range test_cases {
 		t.Run(test_case.title, func(t *testing.T) {
-			pluginHandler, err := filterjsonbody.New(ctx, nextHandler, test_case.config, "test-plugin")
+			pluginHandler, err := New(ctx, nextHandler, test_case.config, "test-plugin")
 			if err != nil {
 				t.Fatalf("Error creating plugin handler: %v", err)
 			}
