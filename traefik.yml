@@ -1,0 +1,20 @@
+log:
+  level: DEBUG
+  filePath: /dev/stdout
+accessLog:
+  filePath: /dev/stdout
+
+providers:
+  file:
+    directory: /etc/traefik/conf
+
+experimental:
+  localPlugins:
+    filterjsonbody:
+      moduleName: github.com/kadoshita/traefik-plugin-filter-json-body
+
+entryPoints:
+  web:
+    address: :80
+api:
+  insecure: true

@@ -1,0 +1,133 @@
+name: E2E Tests
+
+on:
+  push:
+
+jobs:
+  e2e-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start Traefik container
+        run: |
+          docker run -d \
+            --name traefik-test \
+            -p 8080:8080 \
+            -p 10081:80 \
+            -v $PWD/traefik.yml:/etc/traefik/traefik.yml \
+            -v $PWD/routes.yml:/etc/traefik/conf/routes.yml \
+            -v $PWD:/plugins-local/src/github.com/kadoshita/traefik-plugin-filter-json-body \
+            traefik:v3
+
+      - name: Wait for Traefik to be ready
+        run: |
+          echo "Waiting for Traefik to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:10081/anything 2>/dev/null; then
+              echo "Traefik is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: Traefik not ready yet..."
+            sleep 2
+          done
+          echo "Traefik failed to start within timeout"
+          docker logs traefik-test
+          exit 1
+
+      - name: Test 1 - Request should be blocked (matching filter condition)
+        run: |
+          echo "Test 1: Sending request that should be blocked..."
+          response=$(curl -s -w "\n%{http_code}" -X POST http://localhost:10081/anything/api/test \
+            -H "Content-Type: application/json" \
+            -d '{"key":"value"}')
+
+          status_code=$(echo "$response" | tail -n1)
+
+          if [ "$status_code" = "403" ]; then
+            echo "✓ Test 1 passed: Request was blocked with 403 Forbidden"
+          else
+            echo "✗ Test 1 failed: Expected 403, got $status_code"
+            echo "Response: $response"
+            exit 1
+          fi
+
+      - name: Test 2 - Request should pass (non-matching value)
+        run: |
+          echo "Test 2: Sending request that should pass through..."
+          response=$(curl -s -w "\n%{http_code}" -X POST http://localhost:10081/anything/api/test \
+            -H "Content-Type: application/json" \
+            -d '{"key":"other-value"}')
+
+          status_code=$(echo "$response" | tail -n1)
+
+          if [ "$status_code" = "200" ]; then
+            echo "✓ Test 2 passed: Request passed through with 200 OK"
+          else
+            echo "✗ Test 2 failed: Expected 200, got $status_code"
+            echo "Response: $response"
+            exit 1
+          fi
+
+      - name: Test 3 - Request should pass (different path)
+        run: |
+          echo "Test 3: Sending request to different path..."
+          response=$(curl -s -w "\n%{http_code}" -X POST http://localhost:10081/anything/api/other \
+            -H "Content-Type: application/json" \
+            -d '{"key":"value"}')
+
+          status_code=$(echo "$response" | tail -n1)
+
+          if [ "$status_code" = "200" ]; then
+            echo "✓ Test 3 passed: Request passed through with 200 OK"
+          else
+            echo "✗ Test 3 failed: Expected 200, got $status_code"
+            echo "Response: $response"
+            exit 1
+          fi
+
+      - name: Test 4 - Request should pass (different method)
+        run: |
+          echo "Test 4: Sending GET request..."
+          response=$(curl -s -w "\n%{http_code}" -X GET http://localhost:10081/anything/api/test)
+
+          status_code=$(echo "$response" | tail -n1)
+
+          if [ "$status_code" = "200" ]; then
+            echo "✓ Test 4 passed: Request passed through with 200 OK"
+          else
+            echo "✗ Test 4 failed: Expected 200, got $status_code"
+            echo "Response: $response"
+            exit 1
+          fi
+
+      - name: Test 5 - Request should pass (non-JSON content)
+        run: |
+          echo "Test 5: Sending non-JSON request..."
+          response=$(curl -s -w "\n%{http_code}" -X POST http://localhost:10081/anything/api/test \
+            -H "Content-Type: text/plain" \
+            -d 'plain text data')
+
+          status_code=$(echo "$response" | tail -n1)
+
+          if [ "$status_code" = "200" ]; then
+            echo "✓ Test 5 passed: Non-JSON request passed through with 200 OK"
+          else
+            echo "✗ Test 5 failed: Expected 200, got $status_code"
+            echo "Response: $response"
+            exit 1
+          fi
+
+      - name: Show Traefik logs on failure
+        if: failure()
+        run: |
+          echo "=== Traefik Container Logs ==="
+          docker logs traefik-test
+
+      - name: Stop and remove Traefik container
+        if: always()
+        run: |
+          docker stop traefik-test || true
+          docker rm traefik-test || true

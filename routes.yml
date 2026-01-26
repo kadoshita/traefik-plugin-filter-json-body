@@ -1,0 +1,23 @@
+http:
+  routers:
+    router:
+      entryPoints:
+        - "web"
+      service: example-service
+      rule: "PathPrefix(`/anything`)"
+      middlewares:
+        - "filterjsonbody"
+  services:
+    example-service:
+      loadBalancer:
+        servers:
+          - url: "https://httpbin.org/anything"
+  middlewares:
+    filterjsonbody:
+      plugin:
+        filterjsonbody:
+          rules:
+            - path: "/anything/api/test"
+              method: "POST"
+              bodyPath: "key"
+              bodyValueCondition: "^value$"
