@@ -145,6 +145,7 @@ func (a *FilterJsonBody) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if target != nil {
 			value := fmt.Sprintf("%v", target.Value())
 			if matchedRule.BodyValueCondition.MatchString(value) {
+				fmt.Printf("Request blocked path=%s method=%s bodyPath=%s bodyValue=%s\n", req.URL.Path, req.Method, matchedRule.BodyPath, value)
 				rw.WriteHeader(http.StatusForbidden)
 				rw.Write([]byte("Forbidden"))
 				return
