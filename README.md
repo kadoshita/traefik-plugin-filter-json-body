@@ -1,27 +1,33 @@
 # traefik-plugin-filter-json-body
-JSONのbodyの内容を元にフィルタリングを行うプラグイン
+A Traefik plugin that filters requests based on JSON body content
 
-## 概要
-リクエストのJSONボディの内容を検査し、指定した条件に一致する場合にリクエストを拒否する。
+## Overview
+This plugin filters incoming requests based on JSON body content and rejects requests that match specified conditions.
 
-## 設定
+## Configuration
 
-### パラメータ
-- `rules`: フィルタリングルールの配列
-  - `path`: リクエストパス（完全一致）
-  - `method`: HTTPメソッド（完全一致）
-  - `bodyPath`: JSONボディ内の検査対象パス（XPath形式）
-  - `bodyValueCondition`: 値の一致条件（正規表現）
+### Parameters
+- `rules`: Array of filtering rules (at least one rule is required)
+  - `path`: Request path (exact match, required)
+  - `method`: HTTP method (exact match, required)
+  - `bodyPath`: Path to the target field in JSON body (XPath format, required)
+  - `bodyValueCondition`: Value matching condition (regular expression, required)
 
-### 動作
-- すべての条件に一致するリクエストは403 Forbiddenを返す
-- 条件に一致しないリクエストは次のハンドラに渡される
-- Content-Typeがapplication/jsonまたはapplication/*+json以外の場合は検査をスキップする
-- ボディサイズの上限は10MB
+### Behavior
+- Multiple rules can be specified in the `rules` array
+- Within each rule, all parameters (`path`, `method`, `bodyPath`, `bodyValueCondition`) must match for that rule to be considered matched (AND logic)
+- If any one of the rules matches, the request returns 403 Forbidden (OR logic)
+- Requests not matching any rules are passed to the next handler
+- Filtering is skipped in the following cases:
+  - Content-Type is not application/json or application/*+json
+  - Body size exceeds 10MB
+  - Body read error occurs
+  - JSON parsing fails
+  - Specified `bodyPath` does not exist in the JSON body
 
-## 設定例
+## Configuration Examples
 
-### 例1: 特定の文字列値を拒否
+### Example 1: Reject specific string value
 ```yaml
 rules:
   - path: /api/test
@@ -30,7 +36,7 @@ rules:
     bodyValueCondition: ^value$
 ```
 
-### 例2: ネストされたオブジェクトの値を検査
+### Example 2: Inspect value in nested object
 ```yaml
 rules:
   - path: /api/test
@@ -39,7 +45,7 @@ rules:
     bodyValueCondition: ^inner$
 ```
 
-### 例3: 配列内のオブジェクトの値を検査
+### Example 3: Inspect value in object within array
 ```yaml
 rules:
   - path: /api/test
